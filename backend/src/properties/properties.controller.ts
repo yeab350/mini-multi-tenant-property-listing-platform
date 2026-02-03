@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { ListPublicPropertiesQueryDto } from './dto/list-public.dto';
+import { ListAdminPropertiesQueryDto } from './dto/list-admin.dto';
 import { CreateDraftPropertyDto } from './dto/create-draft.dto';
 import { PublishPropertyDto } from './dto/publish.dto';
 import { UpdateDraftPropertyDto } from './dto/update-draft.dto';
@@ -76,6 +77,23 @@ export class PropertiesController {
   }
 
   @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('admin')
+  @Get('admin/properties/paged')
+  listAdminPaged(
+    @Param('tenantSlug') tenantSlug: string,
+    @Query() query: ListAdminPropertiesQueryDto,
+  ) {
+    return this.properties.listAdminPaged(tenantSlug, {
+      location: query.location,
+      minPrice: query.minPrice,
+      maxPrice: query.maxPrice,
+      status: query.status,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
   @Roles('owner')
   @Post('owner/properties')
   createDraft(
@@ -113,6 +131,38 @@ export class PropertiesController {
       id,
       body.force ?? false,
     );
+  }
+
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('owner')
+  @Post('owner/properties/:id/archive')
+  archiveOwner(
+    @Param('tenantSlug') tenantSlug: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.properties.archiveOwner(tenantSlug, user.id, id);
+  }
+
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('owner')
+  @Post('owner/properties/:id/delete')
+  deleteOwner(
+    @Param('tenantSlug') tenantSlug: string,
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.properties.softDeleteOwner(tenantSlug, user.id, id);
+  }
+
+  @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)
+  @Roles('user', 'owner', 'admin')
+  @Post('public/properties/:id/contact')
+  contactOwner(
+    @Param('tenantSlug') tenantSlug: string,
+    @Param('id') id: string,
+  ) {
+    return this.properties.contactOwner(tenantSlug, id);
   }
 
   @UseGuards(JwtAuthGuard, TenantGuard, RolesGuard)

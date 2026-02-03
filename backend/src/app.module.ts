@@ -9,10 +9,15 @@ import { AuthModule } from './auth/auth.module';
 import { PropertiesModule } from './properties/properties.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { SeedModule } from './seed/seed.module';
+import { AdminModule } from './admin/admin.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [`.env.${process.env.NODE_ENV ?? 'development'}`, '.env'],
+    }),
     DatabaseModule,
     TenantsModule,
     UsersModule,
@@ -20,6 +25,8 @@ import { SeedModule } from './seed/seed.module';
     PropertiesModule,
     FavoritesModule,
     SeedModule,
+    AdminModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

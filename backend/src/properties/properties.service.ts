@@ -33,6 +33,17 @@ export class PropertiesService {
     );
   }
 
+  private requireValidImageUrls(images: string[]) {
+    for (const url of images) {
+      // We only support externally-hosted URLs in this exam implementation.
+      if (!/^https?:\/\//i.test(url)) {
+        throw new BadRequestException(
+          'Images must be http(s) URLs (external storage).',
+        );
+      }
+    }
+  }
+
   async listPublic(
     tenantSlug: string,
     query: {
@@ -53,7 +64,8 @@ export class PropertiesService {
       .createQueryBuilder('p')
       .where('p.tenantId = :tenantId', { tenantId: tenant.id })
       .andWhere('p.status = :status', { status: 'published' as PropertyStatus })
-      .andWhere('p.disabled = false');
+      .andWhere('p.disabled = false')
+      .andWhere('p.deletedAt IS NULL');
 
     if (query.location && query.location.trim()) {
       qb.andWhere('LOWER(p.location) LIKE :loc', {
@@ -90,7 +102,8 @@ export class PropertiesService {
       .createQueryBuilder('p')
       .where('p.tenantId = :tenantId', { tenantId: tenant.id })
       .andWhere('p.status = :status', { status: 'published' as PropertyStatus })
-      .andWhere('p.disabled = false');
+      .andWhere('p.disabled = false')
+      .andWhere('p.deletedAt IS NULL');
 
     if (query.location && query.location.trim()) {
       qb.andWhere('LOWER(p.location) LIKE :loc', {
@@ -143,6 +156,55 @@ export class PropertiesService {
     });
   }
 
+  async listAdminPaged(
+    tenantSlug: string,
+    query: {
+      location?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      status?: PropertyStatus;
+      page: number;
+      pageSize: number;
+    },
+  ) {
+    const tenant = await this.tenants.findBySlug(tenantSlug);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const qb = this.properties
+      .createQueryBuilder('p')
+      .where('p.tenantId = :tenantId', { tenantId: tenant.id })
+      .andWhere('p.deletedAt IS NULL');
+
+    if (query.status) {
+      qb.andWhere('p.status = :status', { status: query.status });
+    }
+    if (query.location && query.location.trim()) {
+      qb.andWhere('LOWER(p.location) LIKE :loc', {
+        loc: `%${query.location.toLowerCase()}%`,
+      });
+    }
+    if (typeof query.minPrice === 'number') {
+      qb.andWhere('p.price >= :minPrice', { minPrice: query.minPrice });
+    }
+    if (typeof query.maxPrice === 'number') {
+      qb.andWhere('p.price <= :maxPrice', { maxPrice: query.maxPrice });
+    }
+
+    qb.orderBy('p.createdAt', 'DESC')
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize);
+
+    const [items, total] = await qb.getManyAndCount();
+    const totalPages = Math.max(1, Math.ceil(total / query.pageSize));
+    return {
+      items,
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalPages,
+    };
+  }
+
   async getPublicById(tenantSlug: string, id: string) {
     const tenant = await this.tenants.findBySlug(tenantSlug);
     if (!tenant) throw new NotFoundException('Tenant not found');
@@ -186,6 +248,8 @@ export class PropertiesService {
       images: input.images ?? [],
     });
 
+    if (entity.images.length) this.requireValidImageUrls(entity.images);
+
     return this.properties.save(entity);
   }
 
@@ -218,7 +282,10 @@ export class PropertiesService {
       p.description = input.description;
     if (typeof input.location === 'string') p.location = input.location;
     if (typeof input.price === 'number') p.price = input.price;
-    if (Array.isArray(input.images)) p.images = input.images;
+    if (Array.isArray(input.images)) {
+      this.requireValidImageUrls(input.images);
+      p.images = input.images;
+    }
 
     return this.properties.save(p);
   }
@@ -232,21 +299,66 @@ export class PropertiesService {
     const tenant = await this.tenants.findBySlug(tenantSlug);
     if (!tenant) throw new NotFoundException('Tenant not found');
 
+    // Transactional publish to avoid race conditions and ensure the read/validate/write
+    // happens atomically.
+    return this.properties.manager.transaction(async (manager) => {
+      const repo = manager.getRepository(PropertyEntity);
+      const p = await repo.findOne({
+        where: { id, tenantId: tenant.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!p) throw new NotFoundException('Property not found');
+      if (p.deletedAt) throw new NotFoundException('Property not found');
+      if (p.ownerId !== ownerId) throw new BadRequestException('Not the owner');
+      if (p.status === 'published') return p;
+      if (p.status === 'archived') {
+        throw new BadRequestException(
+          'Archived properties cannot be published',
+        );
+      }
+
+      if (!force && !this.canPublish(p)) {
+        throw new BadRequestException(
+          'Property missing required fields (title, description, location, price, 1+ image)',
+        );
+      }
+      if (p.images.length) this.requireValidImageUrls(p.images);
+
+      p.status = 'published';
+      return repo.save(p);
+    });
+  }
+
+  async archiveOwner(tenantSlug: string, ownerId: string, id: string) {
+    const tenant = await this.tenants.findBySlug(tenantSlug);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
     const p = await this.properties.findOne({
       where: { id, tenantId: tenant.id },
     });
-
-    if (!p) throw new NotFoundException('Property not found');
+    if (!p || p.deletedAt) throw new NotFoundException('Property not found');
     if (p.ownerId !== ownerId) throw new BadRequestException('Not the owner');
 
-    if (!force && !this.canPublish(p)) {
-      throw new BadRequestException(
-        'Property missing required fields (title, description, location, price, 1+ image)',
-      );
+    p.status = 'archived';
+    return this.properties.save(p);
+  }
+
+  async softDeleteOwner(tenantSlug: string, ownerId: string, id: string) {
+    const tenant = await this.tenants.findBySlug(tenantSlug);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const p = await this.properties.findOne({
+      where: { id, tenantId: tenant.id },
+    });
+    if (!p || p.deletedAt) throw new NotFoundException('Property not found');
+    if (p.ownerId !== ownerId) throw new BadRequestException('Not the owner');
+    if (p.status === 'published') {
+      throw new BadRequestException('Archive the property before deleting');
     }
 
-    p.status = 'published';
-    return this.properties.save(p);
+    await this.properties.softRemove(p);
+    return { deleted: true };
   }
 
   async toggleDisabled(tenantSlug: string, id: string) {
@@ -256,9 +368,29 @@ export class PropertiesService {
     const p = await this.properties.findOne({
       where: { id, tenantId: tenant.id },
     });
-    if (!p) throw new NotFoundException('Property not found');
+    if (!p || p.deletedAt) throw new NotFoundException('Property not found');
 
     p.disabled = !p.disabled;
     return this.properties.save(p);
+  }
+
+  async contactOwner(tenantSlug: string, propertyId: string) {
+    const tenant = await this.tenants.findBySlug(tenantSlug);
+    if (!tenant) throw new NotFoundException('Tenant not found');
+
+    const p = await this.properties.findOne({
+      where: {
+        id: propertyId,
+        tenantId: tenant.id,
+        status: 'published',
+        disabled: false,
+      },
+      relations: ['owner'],
+    });
+
+    if (!p || p.deletedAt) throw new NotFoundException('Property not found');
+    if (!p.owner) throw new NotFoundException('Owner not found');
+
+    return { ownerEmail: p.owner.email };
   }
 }

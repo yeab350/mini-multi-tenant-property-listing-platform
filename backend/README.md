@@ -62,7 +62,17 @@ docker compose up -d
 - `POST /api/auth/register`
 - `GET /api/tenants/:tenantSlug/public/properties`
 - `GET /api/tenants/:tenantSlug/public/properties/:id`
+- `POST /api/tenants/:tenantSlug/public/properties/:id/contact` (Bearer token)
 - `GET /api/tenants/:tenantSlug/favorites` (Bearer token)
 - `POST /api/tenants/:tenantSlug/favorites/:propertyId/toggle` (Bearer token)
 - `POST /api/tenants/:tenantSlug/owner/properties` (owner)
+- `POST /api/tenants/:tenantSlug/owner/uploads/images` (owner, multipart)
+- `POST /api/tenants/:tenantSlug/owner/properties/:id/archive` (owner)
+- `POST /api/tenants/:tenantSlug/owner/properties/:id/delete` (owner, soft delete)
 - `PATCH /api/tenants/:tenantSlug/admin/properties/:id/toggle-disabled` (admin)
+- `GET /api/tenants/:tenantSlug/admin/properties/paged` (admin, pagination + filters incl status)
+- `GET /api/tenants/:tenantSlug/admin/metrics` (admin)
+
+## API docs
+
+- Swagger UI: `http://localhost:3001/api/docs`

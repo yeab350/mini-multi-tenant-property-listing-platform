@@ -67,3 +67,36 @@ Then follow the backend steps above.
 - Favorites:
   - When logged in, favorites are stored in the backend (per tenant + user).
   - When logged out, favorites still work locally (Zustand + localStorage).
+
+## Technical decision document (exam)
+
+### Why this backend framework
+- **NestJS**: opinionated structure (modules/controllers/services/guards) that scales well for multi-tenant APIs, and makes RBAC + validation straightforward.
+
+### State management approach
+- **Zustand**: lightweight client state for auth + favorites with `persist` to keep sessions across refresh.
+- Server state is fetched directly from the NestJS API (SSR where required; CSR in dashboards).
+
+### Access control enforcement
+- **JWT auth** with a Passport JWT strategy.
+- **Tenant scoping** via a guard that prevents cross-tenant access (`tenantSlug` in path must match JWT).
+- **Role-based access** via a `@Roles()` decorator + `RolesGuard`.
+
+### Image handling (type/size + production URLs)
+- Client validates image type/size before upload (JPG/PNG/WebP, max 5MB).
+- Owner uploads images to the backend which stores them under `/uploads/*` and returns **http(s) URLs** that are saved on the property.
+- This keeps images working in production without relying on browser-only `blob:` URLs.
+
+### Hardest technical challenge
+- Keeping multi-tenant scoping consistent across every route (public vs owner vs admin) while maintaining a simple developer experience.
+
+### What breaks first at scale
+- Uploaded images stored on the backend filesystem (you would migrate to S3/Cloudinary + CDN).
+- Listing queries would benefit from additional indexes + caching once traffic grows.
+
+## Deployment URLs (fill in)
+- Frontend: <ADD_YOUR_VERCEL_OR_NETLIFY_URL>
+- Backend API: <ADD_YOUR_RENDER_RAILWAY_FLY_URL>
+
+## API documentation
+- Swagger UI: `/api/docs` on the backend (example: `http://localhost:3001/api/docs`).

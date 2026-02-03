@@ -1,6 +1,7 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   Index,
   JoinColumn,
@@ -13,7 +14,7 @@ import { TenantEntity } from '../tenants/tenant.entity';
 import { UserEntity } from '../users/user.entity';
 import { FavoriteEntity } from '../favorites/favorite.entity';
 
-export const PROPERTY_STATUSES = ['draft', 'published'] as const;
+export const PROPERTY_STATUSES = ['draft', 'published', 'archived'] as const;
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 
 @Entity('properties')
@@ -65,6 +66,9 @@ export class PropertyEntity {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt!: Date;
+
+  @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+  deletedAt!: Date | null;
 
   @OneToMany(() => FavoriteEntity, (f) => f.property)
   favorites!: FavoriteEntity[];

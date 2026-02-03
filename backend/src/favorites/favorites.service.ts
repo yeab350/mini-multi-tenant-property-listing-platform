@@ -32,7 +32,13 @@ export class FavoritesService {
     if (!tenant) throw new NotFoundException('Tenant not found');
 
     const property = await this.properties.findOne({
-      where: { id: propertyId, tenantId: tenant.id },
+      where: {
+        id: propertyId,
+        tenantId: tenant.id,
+        status: 'published',
+        disabled: false,
+      },
+      withDeleted: false,
     });
     if (!property) throw new NotFoundException('Property not found');
 
