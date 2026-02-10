@@ -25,6 +25,25 @@ npm run start:dev
 
 API base URL: `http://localhost:3001/api`
 
+### Run both (one command)
+
+From the repo root:
+
+```powershell
+npm install
+npm run docker:up
+Copy-Item backend/.env.example backend/.env
+# Edit backend/.env if your Postgres password is not "postgres"
+npm run db:ensure
+npm run dev:all
+```
+
+This runs:
+- backend: `npm --prefix backend run start:dev` (API on `http://localhost:3001/api`)
+- frontend: `npm --prefix frontend run dev` (UI on `http://localhost:3000`)
+
+Note: you still need Postgres running + the backend `.env` set up (see backend section above).
+
 Seeded demo users (per tenant):
 - `user@demo.com` / `password`
 - `owner@demo.com` / `password`
