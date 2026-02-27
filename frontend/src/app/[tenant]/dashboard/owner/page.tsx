@@ -48,6 +48,18 @@ export default function OwnerDashboard({ params }: { params: { tenant: string } 
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [edit, setEdit] = useState({
+    title: "",
+    location: "",
+    price: "",
+    description: "",
+    imageUrl: "",
+    images: [] as string[],
+  });
+
   const [form, setForm] = useState({
     title: "",
     location: "",
@@ -368,6 +380,7 @@ export default function OwnerDashboard({ params }: { params: { tenant: string } 
                   {rows.map((p) => {
                     const editable = p.status === "draft";
                     const valid = canPublish(p);
+                    const isEditing = editingId === p.id;
 
                     return (
                       <div key={p.id} className="p-6">
@@ -386,31 +399,31 @@ export default function OwnerDashboard({ params }: { params: { tenant: string } 
                             <Button
                               type="button"
                               variant="secondary"
-                              disabled={!editable}
+                              disabled={!editable || saving || uploading}
                               onClick={() => {
-                                const nextTitle = window.prompt("Edit title", p.title);
-                                if (nextTitle === null) return;
-
-                                if (!accessToken) return;
-                                void updateDraftProperty(tenantSlug, accessToken, p.id, {
-                                  title: nextTitle,
-                                })
-                                  .then((updated) => {
-                                    setRows((current) =>
-                                      current.map((row) => (row.id === p.id ? updated : row))
-                                    );
-                                  })
-                                  .catch(() => {
-                                    // keep UX simple; ignore
-                                  });
+                                if (isEditing) {
+                                  setEditingId(null);
+                                  setEditError(null);
+                                  return;
+                                }
+                                setEditError(null);
+                                setEditingId(p.id);
+                                setEdit({
+                                  title: p.title,
+                                  location: p.location,
+                                  price: String(p.price ?? ""),
+                                  description: p.description,
+                                  imageUrl: "",
+                                  images: Array.isArray(p.images) ? p.images : [],
+                                });
                               }}
                             >
-                              Edit draft
+                              {isEditing ? "Close editor" : "Edit"}
                             </Button>
 
                             <Button
                               type="button"
-                              disabled={!editable || !valid}
+                              disabled={!editable || !valid || isEditing || saving}
                               onClick={async () => {
                                 if (!accessToken) return;
                                 const before = rows;
@@ -438,7 +451,7 @@ export default function OwnerDashboard({ params }: { params: { tenant: string } 
                             <Button
                               type="button"
                               variant="secondary"
-                              disabled={p.status === "published"}
+                              disabled={p.status === "published" || saving}
                               onClick={() => {
                                 if (!accessToken) return;
                                 void archiveProperty(tenantSlug, accessToken, p.id)
@@ -458,7 +471,7 @@ export default function OwnerDashboard({ params }: { params: { tenant: string } 
                             <Button
                               type="button"
                               variant="ghost"
-                              disabled={p.status === "published"}
+                              disabled={p.status === "published" || saving}
                               onClick={() => {
                                 if (!accessToken) return;
                                 const ok = window.confirm(
@@ -479,6 +492,189 @@ export default function OwnerDashboard({ params }: { params: { tenant: string } 
                             </Button>
                           </div>
                         </div>
+
+                        {isEditing ? (
+                          <div className="mt-5 rounded-3xl border border-zinc-200/70 bg-white/60 p-5">
+                            <div className="text-sm font-semibold text-zinc-900">Edit draft</div>
+                            <div className="mt-1 text-xs text-zinc-600">
+                              Changes are saved to the backend immediately.
+                            </div>
+
+                            <div className="mt-4 grid gap-4">
+                              <div className="grid gap-4 sm:grid-cols-2">
+                                <Input
+                                  label="Title"
+                                  value={edit.title}
+                                  onChange={(e) =>
+                                    setEdit((s) => ({ ...s, title: e.target.value }))
+                                  }
+                                />
+                                <Input
+                                  label="Location"
+                                  value={edit.location}
+                                  onChange={(e) =>
+                                    setEdit((s) => ({ ...s, location: e.target.value }))
+                                  }
+                                />
+                              </div>
+
+                              <Input
+                                label="Price"
+                                inputMode="numeric"
+                                value={edit.price}
+                                onChange={(e) =>
+                                  setEdit((s) => ({ ...s, price: e.target.value }))
+                                }
+                              />
+
+                              <div className="grid gap-2">
+                                <Input
+                                  label="Image URL"
+                                  value={edit.imageUrl}
+                                  onChange={(e) =>
+                                    setEdit((s) => ({ ...s, imageUrl: e.target.value }))
+                                  }
+                                  placeholder="https://..."
+                                />
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => {
+                                      setEditError(null);
+                                      const url = edit.imageUrl.trim();
+                                      if (!url) return;
+                                      setEdit((s) => ({
+                                        ...s,
+                                        imageUrl: "",
+                                        images: s.images.includes(url)
+                                          ? s.images
+                                          : [...s.images, url],
+                                      }));
+                                    }}
+                                  >
+                                    Add image URL
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    disabled={saving}
+                                    onClick={() => {
+                                      setEdit((s) => ({ ...s, images: [], imageUrl: "" }));
+                                    }}
+                                  >
+                                    Clear images
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {edit.images.length ? (
+                                <div className="rounded-3xl border border-zinc-200/70 bg-white/60 p-4">
+                                  <div className="text-xs font-semibold text-zinc-700">
+                                    Images
+                                  </div>
+                                  <div className="mt-3 grid grid-cols-3 gap-2">
+                                    {edit.images.map((src) => (
+                                      <div
+                                        key={src}
+                                        className="group relative overflow-hidden rounded-2xl"
+                                      >
+                                        <img
+                                          src={src}
+                                          alt=""
+                                          className="h-24 w-full object-cover"
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEdit((s) => ({
+                                              ...s,
+                                              images: s.images.filter((u) => u !== src),
+                                            }));
+                                          }}
+                                          className="absolute right-2 top-2 rounded-xl bg-white/90 px-2 py-1 text-xs font-semibold text-zinc-900 opacity-0 shadow-sm transition group-hover:opacity-100"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              <Textarea
+                                label="Description"
+                                value={edit.description}
+                                onChange={(e) =>
+                                  setEdit((s) => ({ ...s, description: e.target.value }))
+                                }
+                              />
+
+                              {editError ? (
+                                <div className="text-sm text-red-600">{editError}</div>
+                              ) : null}
+
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <Button
+                                  type="button"
+                                  disabled={!accessToken || saving}
+                                  className="h-11"
+                                  onClick={async () => {
+                                    if (!accessToken) {
+                                      setEditError("You must be logged in.");
+                                      return;
+                                    }
+
+                                    setEditError(null);
+                                    setSaving(true);
+                                    try {
+                                      const price = Number(edit.price);
+                                      const updated = await updateDraftProperty(
+                                        tenantSlug,
+                                        accessToken,
+                                        p.id,
+                                        {
+                                          title: edit.title,
+                                          location: edit.location,
+                                          description: edit.description,
+                                          price: Number.isFinite(price) ? price : 0,
+                                          images: edit.images,
+                                        }
+                                      );
+
+                                      setRows((current) =>
+                                        current.map((row) => (row.id === p.id ? updated : row))
+                                      );
+                                      setEditingId(null);
+                                    } catch (err: unknown) {
+                                      setEditError(
+                                        err instanceof Error
+                                          ? err.message
+                                          : "Failed to save changes."
+                                      );
+                                    } finally {
+                                      setSaving(false);
+                                    }
+                                  }}
+                                >
+                                  {saving ? "Saving…" : "Save changes"}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  className="h-11"
+                                  disabled={saving}
+                                  onClick={() => {
+                                    setEditingId(null);
+                                    setEditError(null);
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
 
                         {!editable ? (
                           <div className="mt-3 text-xs text-zinc-600">

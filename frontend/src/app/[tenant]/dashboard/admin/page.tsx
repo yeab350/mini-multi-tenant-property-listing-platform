@@ -155,55 +155,111 @@ export default function AdminDashboard({ params }: { params: { tenant: string } 
               <div className="px-6 py-4 text-sm text-red-600">{error}</div>
             ) : null}
 
-            <div className="grid grid-cols-12 gap-2 border-b border-zinc-200/70 bg-zinc-50/60 px-6 py-3 text-xs font-semibold text-zinc-600">
-              <div className="col-span-5">Property</div>
-              <div className="col-span-3">Location</div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-2 text-right">Action</div>
+            {!loading && !error && rows.length === 0 ? (
+              <div className="px-6 py-6 text-sm text-zinc-600">
+                No properties found for this tenant yet.
+              </div>
+            ) : null}
+
+            {/* Mobile layout */}
+            <div className="divide-y divide-zinc-100 sm:hidden">
+              {rows.map((p) => (
+                <div key={p.id} className="px-6 py-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-zinc-900">
+                        {p.title}
+                      </div>
+                      <div className="mt-1 text-xs text-zinc-600">
+                        {p.location} • {formatCurrency(p.price)}
+                      </div>
+                    </div>
+                    <Badge tone={p.disabled ? "danger" : "neutral"}>
+                      {p.disabled ? "disabled" : p.status}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        if (!accessToken) return;
+                        const before = rows;
+                        setRows((current) =>
+                          current.map((row) =>
+                            row.id === p.id ? { ...row, disabled: !row.disabled } : row
+                          )
+                        );
+
+                        void toggleDisabledProperty(tenantSlug, accessToken, p.id)
+                          .then((updated) => {
+                            setRows((current) =>
+                              current.map((row) => (row.id === p.id ? updated : row))
+                            );
+                          })
+                          .catch(() => setRows(before));
+                      }}
+                    >
+                      {p.disabled ? "Enable" : "Disable"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {rows.map((p) => (
-              <div
-                key={p.id}
-                className="grid grid-cols-12 gap-2 px-6 py-4 text-sm text-zinc-800 border-b border-zinc-100 last:border-b-0"
-              >
-                <div className="col-span-5">
-                  <div className="font-semibold text-zinc-900">{p.title}</div>
-                  <div className="mt-1 text-xs text-zinc-600">{formatCurrency(p.price)}</div>
-                </div>
-                <div className="col-span-3 text-zinc-700">{p.location}</div>
-                <div className="col-span-2">
-                  <Badge tone={p.disabled ? "danger" : "neutral"}>
-                    {p.disabled ? "disabled" : p.status}
-                  </Badge>
-                </div>
-                <div className="col-span-2 flex justify-end">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      if (!accessToken) return;
-                      const before = rows;
-                      setRows((current) =>
-                        current.map((row) =>
-                          row.id === p.id ? { ...row, disabled: !row.disabled } : row
-                        )
-                      );
-
-                      void toggleDisabledProperty(tenantSlug, accessToken, p.id)
-                        .then((updated) => {
-                          setRows((current) =>
-                            current.map((row) => (row.id === p.id ? updated : row))
-                          );
-                        })
-                        .catch(() => setRows(before));
-                    }}
-                  >
-                    {p.disabled ? "Enable" : "Disable"}
-                  </Button>
-                </div>
+            {/* Desktop/table layout */}
+            <div className="hidden sm:block">
+              <div className="grid grid-cols-12 gap-2 border-b border-zinc-200/70 bg-zinc-50/60 px-6 py-3 text-xs font-semibold text-zinc-600">
+                <div className="col-span-5">Property</div>
+                <div className="col-span-3">Location</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-2 text-right">Action</div>
               </div>
-            ))}
+
+              {rows.map((p) => (
+                <div
+                  key={p.id}
+                  className="grid grid-cols-12 gap-2 px-6 py-4 text-sm text-zinc-800 border-b border-zinc-100 last:border-b-0"
+                >
+                  <div className="col-span-5">
+                    <div className="font-semibold text-zinc-900">{p.title}</div>
+                    <div className="mt-1 text-xs text-zinc-600">{formatCurrency(p.price)}</div>
+                  </div>
+                  <div className="col-span-3 text-zinc-700">{p.location}</div>
+                  <div className="col-span-2">
+                    <Badge tone={p.disabled ? "danger" : "neutral"}>
+                      {p.disabled ? "disabled" : p.status}
+                    </Badge>
+                  </div>
+                  <div className="col-span-2 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        if (!accessToken) return;
+                        const before = rows;
+                        setRows((current) =>
+                          current.map((row) =>
+                            row.id === p.id ? { ...row, disabled: !row.disabled } : row
+                          )
+                        );
+
+                        void toggleDisabledProperty(tenantSlug, accessToken, p.id)
+                          .then((updated) => {
+                            setRows((current) =>
+                              current.map((row) => (row.id === p.id ? updated : row))
+                            );
+                          })
+                          .catch(() => setRows(before));
+                      }}
+                    >
+                      {p.disabled ? "Enable" : "Disable"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </Card>
         </TenantShellMain>
       </TenantShell>

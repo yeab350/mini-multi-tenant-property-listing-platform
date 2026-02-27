@@ -11,7 +11,7 @@ export function SiteHeader() {
           <Link href="/" className="flex items-center gap-2">
             <span
               className="h-3 w-3 rounded-full shadow-sm"
-              style={{ backgroundColor: "#4f46e5" }}
+              style={{ backgroundColor: "var(--tenant-accent)" }}
               aria-hidden
             />
             <span className="text-sm font-semibold text-zinc-900">
