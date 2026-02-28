@@ -14,8 +14,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "Mini Multi-Tenant Property Listing",
   description: "A mini multi-tenant property listing platform (frontend).",
+  openGraph: {
+    title: "Mini Multi-Tenant Property Listing",
+    description: "A mini multi-tenant property listing platform (frontend).",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mini Multi-Tenant Property Listing",
+    description: "A mini multi-tenant property listing platform (frontend).",
+  },
 };
 
 export default function RootLayout({
