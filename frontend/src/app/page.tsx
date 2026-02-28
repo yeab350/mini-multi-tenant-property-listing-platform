@@ -9,6 +9,31 @@ import { Divider } from "@/components/ui/Divider";
 import { ButtonLink } from "@/components/ui/Button";
 
 export default function Home() {
+  const highlightChips = [
+    "SSR listings",
+    "Protected dashboards",
+    "Optimistic favorites",
+    "Owner publishing",
+  ];
+
+  const roleCards = [
+    {
+      title: "User",
+      body: "Save favorites and see them persist + sync across tabs.",
+      href: "/alpha-homes/dashboard/user",
+    },
+    {
+      title: "Owner",
+      body: "Create drafts, upload images, and publish after validation.",
+      href: "/alpha-homes/dashboard/owner",
+    },
+    {
+      title: "Admin",
+      body: "Moderate listings and view basic platform metrics.",
+      href: "/alpha-homes/dashboard/admin",
+    },
+  ];
+
   return (
     <div className="min-h-screen relative">
       <HomeHeroBackground />
@@ -23,10 +48,8 @@ export default function Home() {
               <span className="block text-zinc-700">Property Listing Platform</span>
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600">
-              A realistic, multi-tenant real-estate UI: browse listings (SSR), open a
-              property, save favorites (optimistic + cross-tab sync), and explore
-              role-based dashboards (user/owner/admin). Backend wiring comes later via
-              NestJS.
+              Pick a tenant, browse SSR listings, save favorites, and preview
+              role-based dashboards.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2">
@@ -42,18 +65,14 @@ export default function Home() {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-2 text-sm text-zinc-600">
-              <span className="rounded-full border border-zinc-200 bg-white/70 px-3 py-1">
-                SSR listings
-              </span>
-              <span className="rounded-full border border-zinc-200 bg-white/70 px-3 py-1">
-                Protected routes
-              </span>
-              <span className="rounded-full border border-zinc-200 bg-white/70 px-3 py-1">
-                Optimistic favorites
-              </span>
-              <span className="rounded-full border border-zinc-200 bg-white/70 px-3 py-1">
-                Owner publishing flow
-              </span>
+              {highlightChips.map((label) => (
+                <span
+                  key={label}
+                  className="rounded-full border border-zinc-200 bg-white/70 px-3 py-1"
+                >
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -104,128 +123,59 @@ export default function Home() {
         </div>
 
         <section id="how" className="mt-14">
-          <div className="grid gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-5">
-              <Card>
-                <CardContent>
-                  <div className="text-sm font-semibold text-zinc-900">What this is</div>
+          <Card>
+            <CardContent>
+              <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
+                <div className="lg:col-span-5">
+                  <div className="text-sm font-semibold text-zinc-900">How it works</div>
                   <p className="mt-2 text-sm leading-6 text-zinc-600">
-                    A frontend-only build that behaves like a real application: routes,
-                    dashboards, SSR pages, optimistic UI, and persistence.
+                    The app is multi-tenant by URL (<span className="font-semibold">/:tenant</span>),
+                    with SSR listing pages and protected dashboards.
                   </p>
 
                   <Divider className="my-5" />
 
                   <div className="grid gap-3 text-sm text-zinc-700">
                     <div>
-                      <span className="font-semibold text-zinc-900">Multi-tenant:</span> each
-                      tenant lives under <span className="font-semibold">/:tenant</span> and
-                      has its own branding.
+                      <span className="font-semibold text-zinc-900">1.</span> Pick a tenant.
                     </div>
                     <div>
-                      <span className="font-semibold text-zinc-900">Listings:</span> server-rendered
-                      browse page with filters + pagination.
+                      <span className="font-semibold text-zinc-900">2.</span> Browse properties (SSR).
                     </div>
                     <div>
-                      <span className="font-semibold text-zinc-900">Dashboards:</span> user/owner/admin
-                      flows behind protected routes.
+                      <span className="font-semibold text-zinc-900">3.</span> Sign in to preview roles.
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
 
-            <div className="lg:col-span-7">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Card>
-                  <CardContent>
-                    <div className="text-sm font-semibold text-zinc-900">User</div>
-                    <div className="mt-2 text-sm leading-6 text-zinc-600">
-                      Save favorites, see them persist across refresh, and sync across tabs.
-                    </div>
-                    <div className="mt-4">
-                      <ButtonLink href="/alpha-homes/dashboard/user" variant="secondary">
-                        Open user dashboard
-                      </ButtonLink>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent>
-                    <div className="text-sm font-semibold text-zinc-900">Owner</div>
-                    <div className="mt-2 text-sm leading-6 text-zinc-600">
-                      Create draft listings, add images, and publish after validation.
-                    </div>
-                    <div className="mt-4">
-                      <ButtonLink href="/alpha-homes/dashboard/owner" variant="secondary">
-                        Open owner dashboard
-                      </ButtonLink>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent>
-                    <div className="text-sm font-semibold text-zinc-900">Admin</div>
-                    <div className="mt-2 text-sm leading-6 text-zinc-600">
-                      View all listings, disable any property, and see basic metrics.
-                    </div>
-                    <div className="mt-4">
-                      <ButtonLink href="/alpha-homes/dashboard/admin" variant="secondary">
-                        Open admin dashboard
-                      </ButtonLink>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent>
-                    <div className="text-sm font-semibold text-zinc-900">Backend-ready</div>
-                    <div className="mt-2 text-sm leading-6 text-zinc-600">
-                      A small API seam is already in place so we can swap mock data for NestJS.
-                    </div>
-                    <div className="mt-4">
-                      <ButtonLink href="/alpha-homes/auth/login" variant="secondary">
-                        Try login
-                      </ButtonLink>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-14">
-          <Card className="overflow-hidden">
-            <CardContent>
-              <div className="grid gap-6 lg:grid-cols-12 lg:items-center">
-                <div className="lg:col-span-7">
-                  <div className="text-sm font-semibold text-zinc-900">How to use it</div>
-                  <div className="mt-2 text-sm leading-6 text-zinc-600">
-                    Pick a tenant, browse properties, open a detail page, then sign in to preview
-                    dashboards. Favorites are persisted locally.
-                  </div>
                   <div className="mt-5 flex flex-wrap gap-2">
                     <ButtonLink href="/alpha-homes/properties">Browse</ButtonLink>
                     <ButtonLink href="/alpha-homes/auth/login" variant="secondary">
                       Sign in
                     </ButtonLink>
-                    <ButtonLink href="/alpha-homes/dashboard" variant="ghost">
-                      Dashboard
-                    </ButtonLink>
                   </div>
                 </div>
 
-                <div className="lg:col-span-5">
-                  <div className="rounded-3xl border border-zinc-200/70 bg-white/60 p-6">
+                <div className="lg:col-span-7">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {roleCards.map((card) => (
+                      <Card key={card.title} className="bg-white/50">
+                        <CardContent>
+                          <div className="text-sm font-semibold text-zinc-900">{card.title}</div>
+                          <div className="mt-2 text-sm leading-6 text-zinc-600">{card.body}</div>
+                          <div className="mt-4">
+                            <ButtonLink href={card.href} variant="secondary">
+                              Open
+                            </ButtonLink>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-3xl border border-zinc-200/70 bg-white/60 p-5">
                     <div className="text-xs font-semibold text-zinc-600">Tech stack</div>
-                    <div className="mt-3 grid gap-2 text-sm text-zinc-700">
-                      <div><span className="font-semibold text-zinc-900">Next.js</span> (App Router) + SSR pages</div>
-                      <div><span className="font-semibold text-zinc-900">TypeScript</span> for safer UI/data models</div>
-                      <div><span className="font-semibold text-zinc-900">Tailwind</span> for a consistent design system</div>
-                      <div><span className="font-semibold text-zinc-900">Zustand</span> for persisted client state</div>
+                    <div className="mt-2 text-sm text-zinc-700">
+                      Next.js + TypeScript + Tailwind + Zustand.
                     </div>
                   </div>
                 </div>
