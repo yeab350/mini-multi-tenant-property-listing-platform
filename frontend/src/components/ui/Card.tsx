@@ -26,7 +26,11 @@ export function CardHeader({
   className?: string;
   children: React.ReactNode;
 }) {
-  return <div className={cn("border-b border-zinc-200/70 p-6", className)}>{children}</div>;
+  return (
+    <div className={cn("border-b border-zinc-200/70 p-6 sm:p-7", className)}>
+      {children}
+    </div>
+  );
 }
 
 export function CardContent({
@@ -36,5 +40,5 @@ export function CardContent({
   className?: string;
   children: React.ReactNode;
 }) {
-  return <div className={cn("p-6", className)}>{children}</div>;
+  return <div className={cn("p-6 sm:p-7", className)}>{children}</div>;
 }

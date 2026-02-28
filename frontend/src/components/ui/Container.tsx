@@ -13,7 +13,7 @@ export function Container({
     <div
       className={cn(
         "mx-auto w-full",
-        "px-[clamp(1rem,3vw,2.5rem)]",
+        "px-[clamp(1.25rem,4vw,3rem)]",
         size === "narrow" && "max-w-6xl",
         size === "wide" && "max-w-[90rem]",
         size === "full" && "max-w-none",

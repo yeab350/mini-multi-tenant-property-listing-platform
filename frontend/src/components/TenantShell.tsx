@@ -118,8 +118,8 @@ export function TenantShell({
 
   return (
     <main>
-      <Container size="full" className="py-8 lg:py-10">
-        <div className="grid gap-6 lg:grid-cols-[18rem_1fr]">
+      <Container size="full" className="py-10 lg:py-12">
+        <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
           <div className="lg:hidden">{aside}</div>
           <aside className="hidden lg:block">
             <div className="sticky top-24">{aside}</div>
